@@ -201,7 +201,7 @@ void inserir(int op){
 	int pos;
 	// structs;
 	ALUNO aluno;
-	DISCIPLINA disciplina;	
+	DISCIPLINA disciplina;
 		
 	switch(op){
 		case 1:			
@@ -251,7 +251,33 @@ void inserir(int op){
 			fclose(fl);
 			break;
 		case 2:			
-			
+			fl = fopen("disciplina.bin","ab+");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {						
+				do
+				{
+					printf("\n\nInforme o código da disciplina: ");
+					scanf("%d", &disciplina.cod);
+					
+					pos = busca_posicao(fl, disciplina.cod, "", 2);
+					if(pos==-1)
+					{
+						printf("\n\nInforme o nome da disciplina: ");
+						fflush(stdin);
+						gets(disciplina.nome);						
+						fwrite(&disciplina,sizeof(DISCIPLINA),1,fl);
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&disciplina,sizeof(DISCIPLINA),1,fl);
+						printf("\n\nId: %d (Disciplina ja cadastrado!)",disciplina.cod);
+					}
+					printf("\n\nDeseja cadastrar outra disciplina? (s)(n)");
+				}while(toupper(getche())=='S');						
+			}
+			fclose(fl);
 			break;
 	}
 }
@@ -262,6 +288,7 @@ void atualizar(int op){
 	int pos;
 	// structs;
 	ALUNO aluno;
+	DISCIPLINA disciplina;
 	
 	switch(op){
 		case 1:			
@@ -283,7 +310,7 @@ void atualizar(int op){
 					{
 						fseek(fl,pos,0);
 						fread(&aluno,sizeof(ALUNO),1,fl);
-						printf("\n\n__________________");
+						printf("\n\n__________________\n");
 						printf("\nNome: %s",aluno.nome);
 						printf("\nFone: %s",aluno.telefone);
 						printf("\nE-mail: %s",aluno.email);
@@ -357,16 +384,78 @@ void atualizar(int op){
 			}
 			fclose(fl);
 			break;
+		case 2:			
+			fl = fopen("disciplina.bin","rb+");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {						
+				do
+				{
+					printf("\n\nInforme o código da disciplina à ser editada: ");
+					scanf("%d", &disciplina.cod);
+					pos = busca_posicao( fl, disciplina.cod, "", 2);
+					if(pos==-1)
+					{						
+						printf("\n\n(Disciplina não cadastrada!)");
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&disciplina,sizeof(DISCIPLINA),1,fl);
+						printf("\n\n__________________\n");
+						printf("\nCód: %d",disciplina.cod);
+						printf("\nNome: %s",disciplina.nome);
+						printf("\n__________________");
+						printf("\n\n1 - Cód \n2 - Nome \nDeseja alterar: ");
+						scanf("%d",&op);
+						
+						switch(op){
+							case 1:
+								printf("\n\nNovo Código: ");
+								scanf("%d", &disciplina.cod);
+								fseek(fl,pos,0);
+								fwrite(&disciplina,sizeof(DISCIPLINA),1,fl);
+								int pos2 = busca_posicao( fl, disciplina.cod, "", 1);
+								if(pos2==-1) {
+									fseek(fl,pos,0);
+									fwrite(&disciplina,sizeof(DISCIPLINA),1,fl);	
+								} else{
+									printf("\n\nId: %d (Disciplina ja cadastrada!)",disciplina.cod);
+									op = 0;
+								}
+								break;
+							case 2:
+								printf("\n\nNovo Nome: ");
+								fflush(stdin);
+								gets(aluno.nome);
+								fseek(fl,pos,0);
+								fwrite(&disciplina,sizeof(DISCIPLINA),1,fl);
+								break;
+							default:
+								printf("\n\nOpção inválida!!");
+								break;
+						}						
+						if(op >= 1 && op <= 6){
+							printf("\n\nRegistro Atualizado!");
+						}
+					}
+					printf("\n\nDeseja cadastrar outra disciplina? (s)(n)");
+				}while(toupper(getche())=='S');						
+			}
+			fclose(fl);
+			break;
 	}
 }
 
 // 1° paramêtro - op: opção que será usada para excluir, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque, 6==Historico escolar;
 void excluir(int op){
 	FILE *fl;
-	int pos;
+	int pos,
+		cod;
 	char cpf[20];
 	// structs;
 	ALUNO aluno;
+	DISCIPLINA disciplina;
 	
 	switch(op){
 		case 1:
@@ -388,7 +477,7 @@ void excluir(int op){
 					{
 						fseek(fl,pos,0);
 						fread(&aluno,sizeof(ALUNO),1,fl);
-						printf("\n\n__________________");
+						printf("\n\n__________________\n");
 						printf("\nNome: %s",aluno.nome);
 						printf("\nFone: %s",aluno.telefone);
 						printf("\nE-mail: %s",aluno.email);
@@ -422,6 +511,54 @@ void excluir(int op){
 			}
 			fclose(fl);
 			break;
+		case 2:
+			fl = fopen("disciplina.bin","rb");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {						
+				do
+				{
+					printf("\n\nInforme o código da disciplina à ser excluida: ");					
+					scanf("%d", &cod);
+					pos = busca_posicao(fl, disciplina.cod, "", 2);
+					if(pos==-1)
+					{						
+						printf("\n\n(Disciplina não cadastrada!)");
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&disciplina,sizeof(DISCIPLINA),1,fl);
+						printf("\n\n__________________\n");
+						printf("\nCód: %d",disciplina.cod);
+						printf("\nNome: %s",disciplina.nome);
+						printf("\n__________________");
+						printf("\n\nDeseja excluir? (s/n)");
+						if(toupper(getch()) == 'S'){
+							FILE *temp;
+							temp = fopen("auxiliar.bin","wb");
+							rewind(fl);
+							fread(&disciplina,sizeof(DISCIPLINA),1,fl);
+							while(!feof(fl)){
+								if(disciplina.cod != cod ){
+									fwrite(&disciplina,sizeof(DISCIPLINA),1,fl);						
+								}
+								fread(&disciplina,sizeof(DISCIPLINA),1,fl);
+							}
+							fclose(fl);
+							fclose(temp);
+							remove("disciplina.bin");
+							rename("auxiliar.bin","disciplina.bin");
+							system("cls");
+							printf("\n\nArquivo excluido com sucesso!\n");
+							system("pause");
+						}						
+					}
+					printf("\n\nDeseja excluir outra disciplina? (s)(n)");
+				}while(toupper(getche())=='S');						
+			}
+			fclose(fl);
+			break;
 			
 	}
 }
@@ -432,15 +569,15 @@ void mostrar(int op){
 	int pos;
 	// structs;
 	ALUNO aluno;
+	DISCIPLINA disciplina;
 	
 	switch(op){
 		case 1:
 			fl = fopen("aluno.bin","rb");
-			if (fl==NULL)
+			if (fl==NULL) {
 				printf("Erro no arquivo!");
-			else
-			{
-				printf("\n\n__________________");
+			} else {
+				printf("\n\n__________________\n");
 				while(fread(&aluno,sizeof(ALUNO),1,fl)==1)
 				{					
 					printf("\nNome: %s",aluno.nome);
@@ -449,6 +586,24 @@ void mostrar(int op){
 					printf("\nSexo: %c",aluno.sexo);
 					printf("\nCPF: %s",aluno.CPF);
 					printf("\nAniversario: %d/%d/%d", aluno.niver.dia, aluno.niver.mes, aluno.niver.ano);																		
+					printf("\n__________________");
+					printf("\n\n");
+				}
+				
+			}	
+			fclose(fl);
+			system("pause");
+			break;
+		case 4:
+			fl = fopen("disciplina.bin","rb");
+			if (fl==NULL) {
+				printf("Erro no arquivo!");
+			} else {
+				printf("\n\n__________________\n");
+				while(fread(&disciplina,sizeof(DISCIPLINA),1,fl)==1)
+				{										
+					printf("\nCód: %d",disciplina.cod);
+					printf("\nNome: %s",disciplina.nome);
 					printf("\n__________________");
 					printf("\n\n");
 				}
@@ -484,13 +639,13 @@ void gerenciar_alunos(int menu) {
 void gerenciar_disciplinas(int menu) { 
 	switch(menu){ // Gerenciamento de Disciplinas;
 		case 1: // 1- Cadastrar Disciplina;
-			
+			inserir(2);
 			break;
 		case 2: // 2- Editar Disciplina;
-			
+			atualizar(2);
 			break;
 		case 3: // 3- Excluir Disciplina;
-			
+			excluir(2);
 			break;
 		case 4: // 4- Atribuir Disciplina;
 			
@@ -566,7 +721,10 @@ void gerenciar_relatorios(int menu) {
 		case 1: // 1- Listar Alunos;
 			mostrar(1);
 			break;
-		
+		case 4: // 4- Listar Disciplinas;
+			mostrar(4);
+			break;
+			
 	}	    	
 }
 
@@ -632,5 +790,4 @@ main(){
 		mostrar_menu(&menu, 0);	
 	}
 }
-
 
