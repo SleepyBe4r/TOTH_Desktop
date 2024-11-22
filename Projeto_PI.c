@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <locale.h>
 #define CAPACIDADE_SALA 30
-#define MAX_DISCIPLINA 15
+#define MAX_DISCIPLINA 30
 
 /*Gerenciar alunos, gerenciar disciplinas, gerenciar
 professores, gerenciar série, gerenciar turma, gerenciar sala, gerenciar ano letivo;
@@ -24,7 +24,7 @@ typedef struct {
 
 typedef struct {
 	int ano; // ano da serie ex: 1, 2, 3;
-	char sala; // identificação da sala ex: A, B, C;
+	char sala[50]; // identificação da sala ex: A, B, C;
 	DATA ano_letivo; // ano letivo ex: 2022, 2023, 2024;
 }SERIE;
 
@@ -116,10 +116,11 @@ void mostrar_menu(int *menu, int op){
             break;
         case 5:
             printf("\n\nMenu de Gerenciamento do Estoque");
-		    printf("\n1- Compra de Materiais");
-		    printf("\n2- Controle do Estoque");
-		    printf("\n3- Planejamento de Reposições");
-		    printf("\n4- Efetuar Baixa de Materiais");					
+		    printf("\n1- Cadastrar Material");
+		    printf("\n2- Editar Material");
+		    printf("\n3- Excluir Material");
+		    printf("\n4- Compra de Materiais");
+		    printf("\n5- Efetuar Baixa de Materiais");					
 		    printf("\n0- Retornar");
             break;
         case 6:
@@ -132,7 +133,7 @@ void mostrar_menu(int *menu, int op){
 		    printf("\n6- Listar Professores"); 
 		    printf("\n7- Listar Disciplinas Ministradas por Professor"); 
 		    printf("\n8- Listar Horários dos Professores"); 
-		    printf("\n9- Listar Turmas por Série"); 
+		    printf("\n9- Listar Séries"); 
 		    printf("\n10- Listar Horário das Turmas"); 
 		    printf("\n11- Listar Uso de Salas"); 
 		    printf("\n12- Listar Capacidade das Salas"); 
@@ -162,11 +163,15 @@ void mostrar_menu(int *menu, int op){
 // 1° paramêtro - fl: arquivo que será buscado;
 // 2° paramêtro - id_d: indentificação em decimal que será usada para buscar;
 // 3° paramêtro - id_s: indentificação em string que será usada para buscar;
-// 4° paramêtro - op: opção que será usada para buscar, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque, 6==Historico escolar;
+// 4° paramêtro - op: opção que será usada para buscar, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque;
 int busca_posicao(FILE *fl, int id_d, char id_s[100], int op){
 	// structs;
 	ALUNO aluno;
 	DISCIPLINA disciplina;
+	PROFESSOR professor;
+	SERIE serie;
+	ESTOQUE estoque;
+	
 	switch(op){
 		case 1:
 			rewind(fl);
@@ -192,16 +197,55 @@ int busca_posicao(FILE *fl, int id_d, char id_s[100], int op){
 				return -1;
 			}
 			break;
+		case 3:
+			rewind(fl);
+			fread(&professor,sizeof(PROFESSOR),1,fl);
+			while(!feof(fl) && strcmp(id_s, professor.CPF)){
+				fread(&professor,sizeof(PROFESSOR),1,fl);
+			}
+			if(!feof(fl)){
+				return(ftell(fl)-sizeof(PROFESSOR));
+			} else{
+				return -1;
+			}
+			break;
+		case 4:
+			rewind(fl);
+			fread(&serie,sizeof(SERIE),1,fl);
+			while(!feof(fl) && strcmp(id_s, serie.sala) && id_d != serie.ano){
+				fread(&serie,sizeof(SERIE),1,fl);
+			}
+			if(!feof(fl)){
+				return(ftell(fl)-sizeof(SERIE));
+			} else{
+				return -1;
+			}
+			break;
+		case 5:
+			rewind(fl);
+			fread(&estoque,sizeof(ESTOQUE),1,fl);
+			while(!feof(fl) && id_d != estoque.cod){
+				fread(&estoque,sizeof(ESTOQUE),1,fl);
+			}
+			if(!feof(fl)){
+				return(ftell(fl)-sizeof(ESTOQUE));
+			} else{
+				return -1;
+			}
+			break;
 	}
 }
 				
-// 1° paramêtro - op: opção que será usada para inserir, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque, 6==Historico escolar;
+// 1° paramêtro - op: opção que será usada para inserir, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque;
 void inserir(int op){
 	FILE *fl;
 	int pos;
 	// structs;
 	ALUNO aluno;
 	DISCIPLINA disciplina;
+	PROFESSOR professor;
+	SERIE serie;
+	ESTOQUE estoque;
 		
 	switch(op){
 		case 1:			
@@ -280,16 +324,100 @@ void inserir(int op){
 			}
 			fclose(fl);
 			break;
+		case 3:
+			fl = fopen("professor.bin","ab+");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {						
+				do
+				{
+					
+					printf("\n\nInforme o CPF do professor: ");
+					fflush(stdin);
+					gets(professor.CPF);
+					pos = busca_posicao(fl, 0, professor.CPF, 3);
+					if(pos==-1)
+					{
+						printf("\n\nInforme o nome completo: ");
+						fflush(stdin);
+						gets(professor.nome);
+						
+						printf("\n\nInforme o sexo do professor (F/M): ");
+						fflush(stdin);
+						scanf("%c", &professor.sexo);
+						professor.sexo = toupper(professor.sexo);
+						
+						printf("\n\nInforme o telefone de contato: ");
+						fflush(stdin);
+						gets(professor.telefone);
+						
+						printf("\n\nInforme o email de contato: ");
+						fflush(stdin);
+						gets(professor.email);
+						
+						printf("\nInforme a data de aniversario dd mm aaaa: ");
+						scanf("%d %d %d", &professor.niver.dia, &professor.niver.mes, &professor.niver.ano);	
+						
+						fwrite(&professor,sizeof(PROFESSOR),1,fl);
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&professor,sizeof(PROFESSOR),1,fl);
+						printf("\n\nId: %s (Professor ja cadastrado!)",professor.CPF);
+					}
+					printf("\n\nDeseja cadastrar outro professor? (s)(n)");
+				}while(toupper(getche())=='S');						
+			}
+			fclose(fl);
+			break;
+		case 4:
+			fl = fopen("serie.bin","ab+");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {						
+				do
+				{
+					
+					printf("\n\nInforme o ano da série: ");
+					scanf("%d", &serie.ano);	
+					
+					printf("\n\nInforme o nome da sala: ");
+					fflush(stdin);
+					gets(serie.sala);
+					pos = busca_posicao(fl, serie.ano, serie.sala, 4);
+					if(pos==-1)
+					{						
+						printf("\nInforme a ano letivo aaaa: ");
+						scanf("%d", &serie.ano_letivo.ano);	
+						
+						fwrite(&serie,sizeof(SERIE),1,fl);
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&serie,sizeof(SERIE),1,fl);
+						printf("\n\nId: %d-%s (Série ja cadastrado!)",serie.ano,serie.sala);
+					}
+					printf("\n\nDeseja cadastrar outra série? (s)(n)");
+				}while(toupper(getche())=='S');						
+			}
+			fclose(fl);
+			break;
 	}
 }
 
-// 1° paramêtro - op: opção que será usada para excluir, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque, 6==Historico escolar;
+// 1° paramêtro - op: opção que será usada para excluir, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque;
 void atualizar(int op){
 	FILE *fl;	
-	int pos;
+	int pos,
+		pos2;
 	// structs;
 	ALUNO aluno;
 	DISCIPLINA disciplina;
+	PROFESSOR professor;
+	SERIE serie;
+	ESTOQUE estoque;
 	
 	switch(op){
 		case 1:			
@@ -356,7 +484,7 @@ void atualizar(int op){
 								printf("\n\nNovo CPF: ");
 								fflush(stdin);
 								gets(aluno.CPF);
-								int pos2 = busca_posicao( fl, 0, aluno.CPF, 1);
+								pos2 = busca_posicao( fl, 0, aluno.CPF, 1);
 								if(pos2==-1) {
 									fseek(fl,pos,0);
 									fwrite(&aluno,sizeof(ALUNO),1,fl);	
@@ -416,7 +544,7 @@ void atualizar(int op){
 								scanf("%d", &disciplina.cod);
 								fseek(fl,pos,0);
 								fwrite(&disciplina,sizeof(DISCIPLINA),1,fl);
-								int pos2 = busca_posicao( fl, disciplina.cod, "", 1);
+								pos2 = busca_posicao( fl, disciplina.cod, "", 1);
 								if(pos2==-1) {
 									fseek(fl,pos,0);
 									fwrite(&disciplina,sizeof(DISCIPLINA),1,fl);	
@@ -445,18 +573,187 @@ void atualizar(int op){
 			}
 			fclose(fl);
 			break;
+		case 3:			
+			fl = fopen("professor.bin","rb+");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {						
+				do
+				{
+					printf("\n\nInforme o CPF do professor à ser editado: ");
+					fflush(stdin);
+					gets(professor.CPF);
+					pos = busca_posicao( fl, 0, professor.CPF, 3);
+					if(pos==-1)
+					{						
+						printf("\n\n(Professor não cadastrado!)");
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&professor,sizeof(PROFESSOR),1,fl);
+						printf("\n\n__________________");
+						printf("\nNome: %s",professor.nome);
+						printf("\nFone: %s",professor.telefone);
+						printf("\nE-mail: %s",professor.email);
+						printf("\nSexo: %c",professor.sexo);
+						printf("\nCPF: %s",professor.CPF);
+						printf("\nAniversario: %d/%d/%d", professor.niver.dia, professor.niver.mes, professor.niver.ano);																		
+						printf("\n__________________");
+						printf("\n\n1 - Nome \n2 - Fone \n3 - E-mail \n4 - Sexo \n5 - CPF \n6 - Aniversário \nDeseja alterar: ");
+						scanf("%d",&op);
+						
+						switch(op){
+							case 1:
+								printf("\n\nNovo Nome: ");
+								fflush(stdin);
+								gets(professor.nome);
+								fseek(fl,pos,0);
+								fwrite(&professor,sizeof(PROFESSOR),1,fl);
+								break;
+							case 2:
+								printf("\n\nNovo telefone: ");
+								fflush(stdin);
+								gets(professor.telefone);
+								fseek(fl,pos,0);
+								fwrite(&professor,sizeof(PROFESSOR),1,fl);
+								break;
+							case 3:
+								printf("\n\nNovo E-mail: ");
+								fflush(stdin);
+								gets(professor.email);
+								fseek(fl,pos,0);
+								fwrite(&professor,sizeof(PROFESSOR),1,fl);
+								break;
+							case 4:
+								printf("\n\nNovo Sexo (F/M): ");
+								fflush(stdin);
+								scanf("%c",&professor.sexo);
+								professor.sexo = toupper(professor.sexo);
+								fseek(fl,pos,0);
+								fwrite(&professor,sizeof(PROFESSOR),1,fl);
+								break;
+							case 5:
+								printf("\n\nNovo CPF: ");
+								fflush(stdin);
+								gets(professor.CPF);
+								pos2 = busca_posicao( fl, 0, professor.CPF, 1);
+								if(pos2==-1) {
+									fseek(fl,pos,0);
+									fwrite(&professor,sizeof(PROFESSOR),1,fl);	
+								} else{
+									printf("\n\nId: %s (Professor ja cadastrado!)",professor.CPF);
+									op = 0;
+								}																
+								break;
+							case 6:
+								printf("\n\nNovo Aniversário dd mm aaaa: ");
+								fflush(stdin);
+								scanf("%d", &professor.niver.dia, &professor.niver.mes, &professor.niver.ano);
+								fseek(fl,pos,0);
+								fwrite(&professor,sizeof(PROFESSOR),1,fl);
+								break;
+							default:
+								printf("\n\nOpção inválida!!");
+								break;
+						}						
+						if(op >= 1 && op <= 6){
+							printf("\n\nRegistro Atualizado!");
+						}
+					}
+					printf("\n\nDeseja atualizar outro professor? (s)(n)");
+				}while(toupper(getche())=='S');						
+			}
+			fclose(fl);
+			break;
+		case 4:
+			fl = fopen("serie.bin","rb+");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {						
+				do
+				{
+					printf("\n\nInforme o ano da série à ser editada: ");
+					scanf("%d", &serie.ano);	
+					
+					printf("\n\nInforme o nome da sala à ser editada: ");
+					fflush(stdin);
+					gets(serie.sala);
+					pos = busca_posicao(fl, serie.ano, serie.sala, 4);
+					if(pos==-1)
+					{						
+						printf("\n\n(Série não cadastrada!)");
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&serie,sizeof(SERIE),1,fl);
+						printf("\n\n__________________");
+						printf("\n\nAno: %d",serie.ano);
+						printf("\nSala: %s",serie.sala);
+						printf("\nAno letivo: %d",serie.ano_letivo.ano);
+						printf("\n__________________");
+						printf("\n\n1 - Ano \n2 - Sala \n3 - Ano Letivo \nDeseja alterar: ");
+						scanf("%d",&op);
+						
+						switch(op){
+							case 1:
+								printf("\n\nNovo Ano: ");
+								scanf("%d", &serie.ano);
+								pos2 = busca_posicao( fl, serie.ano, serie.sala, 4);
+								if(pos2==-1) {
+									fseek(fl,pos,0);
+									fwrite(&serie,sizeof(SERIE),1,fl);	
+								} else {
+									printf("\n\nId: %d-%s (Série ja cadastrado!)",serie.ano,serie.sala);
+									op = 0;
+								}
+								break;
+							case 2:
+								printf("\n\nNova Sala: ");
+								fflush(stdin);
+								gets(serie.sala);
+								pos2 = busca_posicao( fl, serie.ano, serie.sala, 4);
+								if(pos2==-1) {
+									fseek(fl,pos,0);
+									fwrite(&serie,sizeof(SERIE),1,fl);	
+								} else{
+									printf("\n\nId: %d-%s (Série ja cadastrado!)",serie.ano,serie.sala);
+									op = 0;
+								}
+								break;
+							case 3:
+								printf("\n\nNovo Ano Letivo: ");
+								scanf("%d", &serie.ano_letivo);
+								fseek(fl,pos,0);
+								fwrite(&serie,sizeof(SERIE),1,fl);		
+								break;
+						}						
+						if(op >= 1 && op <= 3){
+							printf("\n\nRegistro Atualizado!");
+						}
+					}
+					printf("\n\nDeseja cadastrar outra disciplina? (s)(n)");
+				}while(toupper(getche())=='S');		
+			}
+			break;
 	}
 }
 
-// 1° paramêtro - op: opção que será usada para excluir, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque, 6==Historico escolar;
+// 1° paramêtro - op: opção que será usada para excluir, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque;
 void excluir(int op){
 	FILE *fl;
 	int pos,
-		cod;
-	char cpf[20];
+		cod,
+		ano;
+	char cpf[20],
+		 sala[50];
 	// structs;
 	ALUNO aluno;
 	DISCIPLINA disciplina;
+	PROFESSOR professor;
+	SERIE serie;
+	ESTOQUE estoque;
 	
 	switch(op){
 		case 1:
@@ -560,17 +857,123 @@ void excluir(int op){
 			}
 			fclose(fl);
 			break;
-			
+		case 3:
+			fl = fopen("professor.bin","rb+");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {	
+				do{				
+					printf("\n\nInforme o CPF do professor à ser excluido: ");
+					fflush(stdin);
+					gets(cpf);
+					pos = busca_posicao(fl,0,cpf,3);
+					if(pos==-1)
+					{						
+						printf("\n\n(Professor não cadastrado!)");
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&professor,sizeof(PROFESSOR),1,fl);
+						printf("\n\n__________________");
+						printf("\nNome: %s",professor.nome);
+						printf("\nFone: %s",professor.telefone);
+						printf("\nE-mail: %s",professor.email);
+						printf("\nSexo: %c",professor.sexo);
+						printf("\nCPF: %s",professor.CPF);
+						printf("\nAniversario: %d/%d/%d", professor.niver.dia, professor.niver.mes, professor.niver.ano);																		
+						printf("\n__________________");
+						printf("\n\nDeseja excluir? (s/n)");
+						if(toupper(getch()) == 'S'){
+							FILE *temp;
+							temp = fopen("auxiliar.bin","wb");
+							rewind(fl);
+							fread(&professor,sizeof(PROFESSOR),1,fl);
+							while(!feof(fl)){
+								if(strcmp(professor.CPF, cpf) != 0){
+									fwrite(&professor,sizeof(PROFESSOR),1,fl);						
+								}
+								fread(&professor,sizeof(PROFESSOR),1,fl);
+							}
+							fclose(fl);
+							fclose(temp);
+							remove("professor.bin");
+							rename("auxiliar.bin","professor.bin");
+							system("cls");
+							printf("\n\nArquivo excluido com sucesso!\n");
+							system("pause");
+						}						
+					}
+					printf("\n\nDeseja excluir outro professor? (s)(n)");
+				}while(toupper(getche())=='S');						
+			}
+			break;
+		case 4:
+			fl = fopen("serie.bin","rb");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {						
+				do
+				{
+					printf("\n\nInforme o ano da série à ser excluida: ");
+					scanf("%d", &ano);	
+					
+					printf("\n\nInforme o nome da sala à ser excluida: ");
+					fflush(stdin);
+					gets(sala);
+					pos = busca_posicao(fl, serie.ano, serie.sala, 4);
+					if(pos==-1)
+					{						
+						printf("\n\n(Série não cadastrada!)");
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&serie,sizeof(SERIE),1,fl);
+						printf("\n\n__________________");
+						printf("\n\nAno: %d",serie.ano);
+						printf("\nSala: %s",serie.sala);
+						printf("\nAno letivo: %d",serie.ano_letivo.ano);
+						printf("\n__________________");
+						printf("\n\nDeseja excluir? (s/n)");
+						if(toupper(getch()) == 'S'){
+							FILE *temp;
+							temp = fopen("auxiliar.bin","wb");
+							rewind(fl);
+							fread(&serie,sizeof(SERIE),1,fl);
+							while(!feof(fl)){
+								if(serie.ano != ano && strcmp(serie.sala, sala) != 0){
+									fwrite(&serie,sizeof(SERIE),1,fl);						
+								}
+								fread(&serie,sizeof(SERIE),1,fl);
+							}
+							fclose(fl);
+							fclose(temp);
+							remove("serie.bin");
+							rename("auxiliar.bin","serie.bin");
+							system("cls");
+							printf("\n\nArquivo excluido com sucesso!\n");
+							system("pause");
+						}						
+					}
+					printf("\n\nDeseja excluir outra Série? (s)(n)");
+				}while(toupper(getche())=='S');						
+			}
+			fclose(fl);
+			break;		
 	}
 }
 
-// 1° paramêtro - op: opção que será usada para mostrar, 1==Aluno, 2==Disciplinas, 3==Professores, 4==Série, 5==Estoque, 6==Historico escolar;
+// 1° paramêtro - op: opção que será usada para mostrar, ;
 void mostrar(int op){
 	FILE *fl;
 	int pos;
 	// structs;
 	ALUNO aluno;
 	DISCIPLINA disciplina;
+	PROFESSOR professor;
+	SERIE serie;
+	ESTOQUE estoque;
 	
 	switch(op){
 		case 1:
@@ -589,8 +992,7 @@ void mostrar(int op){
 					printf("\nAniversario: %d/%d/%d", aluno.niver.dia, aluno.niver.mes, aluno.niver.ano);																		
 					printf("\n__________________");
 					printf("\n\n");
-				}
-				
+				}				
 			}	
 			fclose(fl);
 			system("pause");
@@ -609,6 +1011,45 @@ void mostrar(int op){
 					printf("\n\n");
 				}
 				
+			}	
+			fclose(fl);
+			system("pause");
+			break;
+		case 6:
+			fl = fopen("professor.bin","rb");
+			if (fl==NULL) {
+				printf("Erro no arquivo!");
+			} else {
+				printf("\n\n__________________");
+				while(fread(&professor,sizeof(PROFESSOR),1,fl)==1)
+				{					
+					printf("\n\nNome: %s",professor.nome);
+					printf("\nFone: %s",professor.telefone);
+					printf("\nE-mail: %s",professor.email);
+					printf("\nSexo: %c",professor.sexo);
+					printf("\nCPF: %s",professor.CPF);
+					printf("\nAniversario: %d/%d/%d", professor.niver.dia, professor.niver.mes, professor.niver.ano);																		
+					printf("\n__________________");
+					printf("\n\n");
+				}				
+			}	
+			fclose(fl);
+			system("pause");
+			break;
+		case 9:
+			fl = fopen("serie.bin","rb");
+			if (fl==NULL) {
+				printf("Erro no arquivo!");
+			} else {
+				printf("\n\n__________________");
+				while(fread(&serie,sizeof(SERIE),1,fl)==1)
+				{										
+					printf("\n\nAno: %d",serie.ano);
+					printf("\nSala: %s",serie.sala);
+					printf("\nAno letivo: %d",serie.ano_letivo.ano);
+					printf("\n__________________");
+					printf("\n\n");
+				}				
 			}	
 			fclose(fl);
 			system("pause");
@@ -663,13 +1104,13 @@ void gerenciar_disciplinas(int menu) {
 void gerenciar_professores(int menu) { 
 	switch(menu){ // Gerenciamento de Professores;
 		case 1: // 1- Cadastrar Professor;
-			
+			inserir(3);
 			break;
 		case 2: // 2- Editar Professor;
-			
+			atualizar(3);
 			break;
 		case 3: // 3- Excluir Professor;
-			
+			excluir(3);
 			break;
 		case 4: // 4- Lançar notas e Frequência;
 			
@@ -683,13 +1124,13 @@ void gerenciar_professores(int menu) {
 void gerenciar_serie(int menu) { 
 	switch(menu){ // Gerenciamento de Séries;
 		case 1: // 1- Cadastrar Série;
-			
+			inserir(4);
 			break;
 		case 2: // 2- Editar Série;
-			
+			atualizar(4);
 			break;
 		case 3: // 3- Excluir Série;
-			
+			excluir(4);
 			break;
 		case 0: // 0- Retornar;			
 			break;
@@ -700,13 +1141,13 @@ void gerenciar_serie(int menu) {
 void gerenciar_estoque(int menu) { 
 	switch(menu){ // Gerenciamento do Estoque;
 		case 1: // 1- Compra de Materiais;
-			
+			inserir(5);
 			break;
 		case 2: // 2- Controle do Estoque;
-			
+			atualizar(5);
 			break;
 		case 3: // 3- Planejamento de Reposições;
-			
+			excluir(5);
 			break;
 		case 4: // 4- Efetuar Baixa de Materiais;
 			
@@ -725,7 +1166,12 @@ void gerenciar_relatorios(int menu) {
 		case 4: // 4- Listar Disciplinas;
 			mostrar(4);
 			break;
-			
+		case 6: // 6- Listar Professores;
+			mostrar(6);
+			break;	
+		case 9: // 9- Listar Séries;
+			mostrar(9);
+			break;	
 	}	    	
 }
 
