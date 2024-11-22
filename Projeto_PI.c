@@ -53,16 +53,16 @@ typedef struct {
 
 typedef struct {
 	int cod_material, // código do material retirado ex: 1, 2, 3;
-		quantidade, // quantidade retirada ex: 0, 1, 2;	
-		cod_pessoa; // código da pessoa que retirou ex: 12345678912;	
-	char motivo[250]; // motivo da retirada do material ex: uso na sala, impressao de prova;	
+		quantidade; // quantidade retirada ex: 0, 1, 2;	
+	char motivo[100], // motivo da retirada do material ex: uso na sala, impressao de prova;	
+		 cod_pessoa[20]; // código da pessoa que retirou ex: 12345678912;	
 	DATA dt_retirada; // data da retirada do material ex: dia->02, mes->07, ano->2000;
 }HISTORICO_RETIRADA;
 
 typedef struct {
 	int cod, // código do material ex: 1, 2, 3;
 		estoque; // quantidade em estoque ex: 0, 1, 2;	
-	char descricao[250]; // descrição do material ex: lapis, giz, papel A4;	
+	char descricao[100]; // descrição do material ex: lapis, giz, papel A4;	
 	DATA ultima_compra; // data da ultima compra do material ex: dia->02, mes->07, ano->2000;
 }ESTOQUE;
 
@@ -131,17 +131,9 @@ void mostrar_menu(int *menu, int op){
 			printf("\n4- Listar Disciplinas"); 
 		    printf("\n5- Listar Disciplinas por Turma"); 
 		    printf("\n6- Listar Professores"); 
-		    printf("\n7- Listar Disciplinas Ministradas por Professor"); 
-		    printf("\n8- Listar Horários dos Professores"); 
-		    printf("\n9- Listar Séries"); 
-		    printf("\n10- Listar Horário das Turmas"); 
-		    printf("\n11- Listar Uso de Salas"); 
-		    printf("\n12- Listar Capacidade das Salas"); 
-		    printf("\n13- Listar Calendário Escolar"); 
-		    printf("\n14- Listar Resumo de Atividades"); 
-		    printf("\n15- Listar Inventário de Materiais"); 
-		    printf("\n16- Listar Compra de Materiais"); 
-		    printf("\n17- Listar Baixas de Materiais"); 
+		    printf("\n9- Listar Séries"); 		    
+		    printf("\n10- Listar Inventário de Materiais"); 
+		    printf("\n11- Listar Baixas de Materiais"); 
 		    printf("\n0- Retornar");
             break;        
         case 0:
@@ -429,11 +421,12 @@ void inserir(int op){
 					} else {
 						fseek(fl,pos,0);
 						fread(&estoque,sizeof(ESTOQUE),1,fl);
-						printf("\n\nId: %d (Material ja cadastrado!)",estoque.ano);
+						printf("\n\nId: %d (Material ja cadastrado!)",estoque.cod);
 					}
 					printf("\n\nDeseja cadastrar outro material? (s)(n)");
 				} while(toupper(getch()) == 'S');
 			}
+			fclose(fl);
 			break;
 	}
 }
@@ -765,6 +758,7 @@ void atualizar(int op){
 					printf("\n\nDeseja atualizar outra série? (s)(n)");
 				}while(toupper(getche())=='S');		
 			}
+			fclose(fl);
 			break;
 		case 5:
 			fl = fopen("estoque.bin","rb+");
@@ -772,7 +766,7 @@ void atualizar(int op){
 				printf("\n\nErro no arquivo!");
 			} else {
 				do{
-					printf("\n\ninforme o código do material á ser editado");
+					printf("\n\ninforme o código do material á ser editado: ");
 					scanf("%d", &estoque.cod);
 					pos = busca_posicao(fl, estoque.cod, "",5);
 					if(pos == -1){
@@ -827,8 +821,9 @@ void atualizar(int op){
 						}
 					}
 					printf("\n\nDeseja atualizar outro material? (s)(n)");
-				} while(toupper(getch()) != 'S');
+				} while(toupper(getch()) == 'S');
 			}
+			fclose(fl);
 			break;
 	}
 }
@@ -884,7 +879,7 @@ void excluir(int op){
 							fread(&aluno,sizeof(ALUNO),1,fl);
 							while(!feof(fl)){
 								if(strcmp(aluno.CPF, cpf) != 0){
-									fwrite(&aluno,sizeof(ALUNO),1,fl);						
+									fwrite(&aluno,sizeof(ALUNO),1,temp);						
 								}
 								fread(&aluno,sizeof(ALUNO),1,fl);
 							}
@@ -932,7 +927,7 @@ void excluir(int op){
 							fread(&disciplina,sizeof(DISCIPLINA),1,fl);
 							while(!feof(fl)){
 								if(disciplina.cod != cod ){
-									fwrite(&disciplina,sizeof(DISCIPLINA),1,fl);						
+									fwrite(&disciplina,sizeof(DISCIPLINA),1,temp);						
 								}
 								fread(&disciplina,sizeof(DISCIPLINA),1,fl);
 							}
@@ -984,7 +979,7 @@ void excluir(int op){
 							fread(&professor,sizeof(PROFESSOR),1,fl);
 							while(!feof(fl)){
 								if(strcmp(professor.CPF, cpf) != 0){
-									fwrite(&professor,sizeof(PROFESSOR),1,fl);						
+									fwrite(&professor,sizeof(PROFESSOR),1,temp);						
 								}
 								fread(&professor,sizeof(PROFESSOR),1,fl);
 							}
@@ -1000,6 +995,7 @@ void excluir(int op){
 					printf("\n\nDeseja excluir outro professor? (s)(n)");
 				}while(toupper(getche())=='S');						
 			}
+			fclose(fl);
 			break;
 		case 4:
 			fl = fopen("serie.bin","rb");
@@ -1036,7 +1032,7 @@ void excluir(int op){
 							fread(&serie,sizeof(SERIE),1,fl);
 							while(!feof(fl)){
 								if(serie.ano != ano && strcmp(serie.sala, sala) != 0){
-									fwrite(&serie,sizeof(SERIE),1,fl);						
+									fwrite(&serie,sizeof(SERIE),1,temp);						
 								}
 								fread(&serie,sizeof(SERIE),1,fl);
 							}
@@ -1087,7 +1083,7 @@ void excluir(int op){
 							fread(&estoque,sizeof(ESTOQUE),1,fl);
 							while(!feof(fl)){
 								if(estoque.cod != cod){
-									fwrite(&estoque,sizeof(ESTOQUE),1,fl);						
+									fwrite(&estoque,sizeof(ESTOQUE),1,temp);						
 								}
 								fread(&serie,sizeof(ESTOQUE),1,fl);
 							}
@@ -1198,7 +1194,96 @@ void mostrar(int op){
 			fclose(fl);
 			system("pause");
 			break;
+		case 10:
+			fl = fopen("estoque.bin","rb");
+			if (fl==NULL) {
+				printf("Erro no arquivo!");
+			} else {
+				printf("\n\n__________________");
+				while(fread(&estoque,sizeof(ESTOQUE),1,fl)==1)
+				{										
+					printf("\n\nCód: %d", estoque.cod);
+					printf("\nQuantidade: %d", estoque.estoque);
+					printf("\nDescrição: %s", estoque.descricao);
+					printf("\nUltima Compra: %d/%d/%d", estoque.ultima_compra.dia, estoque.ultima_compra.mes, estoque.ultima_compra.ano);
+					printf("\n__________________");
+					printf("\n\n");
+				}				
+			}	
+			fclose(fl);
+			system("pause");
+			break;
 	}
+}
+
+void baixa_material(){
+	FILE *fl_esto,
+		 *fl_reti,
+		 *fl_A,
+		 *fl_P;
+		 
+	int pos,
+		pos_A,
+		pos_P;
+	ESTOQUE estoque;
+	HISTORICO_RETIRADA e_retirada; 
+	
+	fl_esto = fopen("estoque.bin","rb+");
+	fl_A = fopen("aluno.bin","rb+");
+	fl_P = fopen("professor.bin","rb+");
+	fl_reti = fopen("estoque_retirada.bin","ab+");
+	if(fl_esto == NULL || fl_A == NULL || fl_P == NULL || fl_reti == NULL) {
+		printf("\n\nErro no arquivo!");
+	} else {
+		do{
+			printf("\n\nInforme o Código do material à dar baixa: ");
+			scanf("%d", &e_retirada.cod_material);
+			
+			pos = busca_posicao(fl_esto, e_retirada.cod_material, "",5);
+			if(pos == -1){
+				printf("\n\n(Material não cadastrado!)");
+			} else {
+				printf("\n\nInforme o CPF da pessoa à retirar o material: ");
+				fflush(stdin);
+				gets(e_retirada.cod_pessoa);
+				
+				pos_A = busca_posicao(fl_A, 0, e_retirada.cod_pessoa,1);
+				pos_P = busca_posicao(fl_P, 0, e_retirada.cod_pessoa,3);
+				
+				if(pos_A == -1 && pos_P == -1){
+					printf("\n\n(Aluno ou Professor não cadastrado!)");
+				} else {
+					printf("\n\nInforme a quantidade à retirar: ");
+					scanf("%d", &e_retirada.quantidade);
+					
+					printf("\n\nInforme o motivo da retirada do material: ");
+					fflush(stdin);
+					gets(e_retirada.motivo);
+					
+					printf("\n\nInforme a data da ultima retirada do material dd mm aaaa: ");
+					scanf("%d %d %d", &e_retirada.dt_retirada.dia, &e_retirada.dt_retirada.mes, &e_retirada.dt_retirada.ano);
+					
+					fseek(fl_esto,pos,0);
+					fread(&estoque,sizeof(ESTOQUE),1,fl_esto);
+					
+					fseek(fl_esto,pos,0);
+					estoque.estoque = estoque.estoque - e_retirada.quantidade;
+					
+					if(estoque.estoque >= 0){
+						fwrite(&estoque,sizeof(ESTOQUE),1,fl_esto);	
+						fwrite(&e_retirada,sizeof(HISTORICO_RETIRADA),1,fl_reti);		
+					} else {
+						printf("\n\nNão há estoque o suficiente para fazer a retirada");
+					}				
+				}
+			}
+			printf("\n\nDeseja retirar outro material? (s)(n)");
+		} while(toupper(getch()) == 'S');
+	}
+	fclose(fl_esto);
+	fclose(fl_A);
+	fclose(fl_P);
+	fclose(fl_reti);
 }
 
 // 1° paramêtro - menu: seleciona a opção do Menu de Gerenciamento de Aluno;
@@ -1284,21 +1369,24 @@ void gerenciar_serie(int menu) {
 // 1° paramêtro - menu: seleciona a opção do Menu de Gerenciamento do Estoque;
 void gerenciar_estoque(int menu) { 
 	switch(menu){ // Gerenciamento do Estoque;
-		case 1: // 1- Compra de Materiais;
+		case 1: // 1- Cadastrar Material;
 			inserir(5);
 			break;
-		case 2: // 2- Controle do Estoque;
+		case 2: // 2- Editar Material;
 			atualizar(5);
 			break;
-		case 3: // 3- Planejamento de Reposições;
+		case 3: // 3- Excluir Material;
 			excluir(5);
 			break;
-		case 4: // 4- Efetuar Baixa de Materiais;
+		case 4: // 4- Compra de Materiais;
 			
+			break;
+		case 5: // 5- Efetuar Baixa de Materiais;
+			baixa_material();
 			break;
 		case 0: // 0- Retornar;			
 			break;
-	}	    	
+	}	    	  	
 }
 
 // 1° paramêtro - menu: seleciona a opção do menu de gerenciamento Relatorios Gerais;
@@ -1316,6 +1404,9 @@ void gerenciar_relatorios(int menu) {
 		case 9: // 9- Listar Séries;
 			mostrar(9);
 			break;	
+		case 10: // 10- Listar Inventário de Materiais;
+			mostrar(10);
+			break;
 	}	    	
 }
 
