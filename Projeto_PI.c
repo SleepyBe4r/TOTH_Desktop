@@ -55,14 +55,14 @@ typedef struct {
 	int cod_material, // código do material retirado ex: 1, 2, 3;
 		quantidade, // quantidade retirada ex: 0, 1, 2;	
 		cod_pessoa; // código da pessoa que retirou ex: 12345678912;	
-	char motivo[100]; // motivo da retirada do material ex: uso na sala, impressao de prova;	
+	char motivo[250]; // motivo da retirada do material ex: uso na sala, impressao de prova;	
 	DATA dt_retirada; // data da retirada do material ex: dia->02, mes->07, ano->2000;
 }HISTORICO_RETIRADA;
 
 typedef struct {
 	int cod, // código do material ex: 1, 2, 3;
 		estoque; // quantidade em estoque ex: 0, 1, 2;	
-	char descricao[100]; // descrição do material ex: lapis, giz, papel A4;	
+	char descricao[250]; // descrição do material ex: lapis, giz, papel A4;	
 	DATA ultima_compra; // data da ultima compra do material ex: dia->02, mes->07, ano->2000;
 }ESTOQUE;
 
@@ -404,6 +404,37 @@ void inserir(int op){
 			}
 			fclose(fl);
 			break;
+		case 5:
+			fl = fopen("estoque.bin","ab+");
+			if(fl == NULL) {
+				printf("\n\nErro no arquivo!");
+			} else {
+				do{
+					printf("\n\nInforme o Código do material: ");
+					scanf("%d", &estoque.cod);
+					
+					pos = busca_posicao(fl, estoque.cod, "",5);
+					if(pos == -1){
+						printf("\n\nInforme a quantidade inicial do material: ");
+						scanf("%d", &estoque.estoque);
+						
+						printf("\n\nInforme a descrição do material: ");
+						fflush(stdin);
+						gets(estoque.descricao);
+						
+						printf("\n\nInforme a data da ultima compra do material dd mm aaaa: ");
+						scanf("%d %d %d", &estoque.ultima_compra.dia, &estoque.ultima_compra.mes, &estoque.ultima_compra.ano);
+						
+						fwrite(&estoque,sizeof(ESTOQUE),1,fl);
+					} else {
+						fseek(fl,pos,0);
+						fread(&estoque,sizeof(ESTOQUE),1,fl);
+						printf("\n\nId: %d (Material ja cadastrado!)",estoque.ano);
+					}
+					printf("\n\nDeseja cadastrar outro material? (s)(n)");
+				} while(toupper(getch()) == 'S');
+			}
+			break;
 	}
 }
 
@@ -568,7 +599,7 @@ void atualizar(int op){
 							printf("\n\nRegistro Atualizado!");
 						}
 					}
-					printf("\n\nDeseja cadastrar outra disciplina? (s)(n)");
+					printf("\n\nDeseja atualizar outra disciplina? (s)(n)");
 				}while(toupper(getche())=='S');						
 			}
 			fclose(fl);
@@ -683,9 +714,7 @@ void atualizar(int op){
 					if(pos==-1)
 					{						
 						printf("\n\n(Série não cadastrada!)");
-					}
-					else 
-					{
+					} else {
 						fseek(fl,pos,0);
 						fread(&serie,sizeof(SERIE),1,fl);
 						printf("\n\n__________________");
@@ -733,8 +762,72 @@ void atualizar(int op){
 							printf("\n\nRegistro Atualizado!");
 						}
 					}
-					printf("\n\nDeseja cadastrar outra disciplina? (s)(n)");
+					printf("\n\nDeseja atualizar outra série? (s)(n)");
 				}while(toupper(getche())=='S');		
+			}
+			break;
+		case 5:
+			fl = fopen("estoque.bin","rb+");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {
+				do{
+					printf("\n\ninforme o código do material á ser editado");
+					scanf("%d", &estoque.cod);
+					pos = busca_posicao(fl, estoque.cod, "",5);
+					if(pos == -1){
+						printf("\n\n(Material não cadastrado!)");
+					} else {
+						fseek(fl,pos,0);
+						fread(&estoque,sizeof(ESTOQUE),1,fl);
+						printf("\n\n__________________");
+						printf("\n\nCód: %d", estoque.cod);
+						printf("\nQuantidade: %d", estoque.estoque);
+						printf("\nDescrição: %s", estoque.descricao);
+						printf("\nUltima Compra: %d/%d/%d", estoque.ultima_compra.dia, estoque.ultima_compra.mes, estoque.ultima_compra.ano);
+						printf("\n__________________");
+						printf("\n\n1 - Cód \n2 - Quantidade \n3 - Descrição \n4 - Ultima Compra \nDeseja alterar: ");
+						scanf("%d",&op);
+						
+						switch(op){
+							case 1:
+								printf("\n\nNovo Cód: ");
+								scanf("%d", &estoque.cod);
+								pos2 = busca_posicao( fl, estoque.cod, "", 5);
+								if(pos2==-1) {
+									fseek(fl,pos,0);
+									fwrite(&estoque,sizeof(ESTOQUE),1,fl);	
+								} else {
+									printf("\n\nId: %d (Material ja cadastrado!)", estoque.cod);
+									op = 0;
+								}
+								break;
+							case 2:
+								printf("\n\nNova Quantidade: ");
+								scanf("%d", &estoque.estoque);
+								fseek(fl,pos,0);
+								fwrite(&estoque,sizeof(ESTOQUE),1,fl);		
+								break;
+							case 3:
+								printf("\n\nNova Descrição: ");
+								fflush(stdin);
+								gets(estoque.descricao);
+								fseek(fl,pos,0);
+								fwrite(&estoque,sizeof(ESTOQUE),1,fl);		
+								break;
+							case 4:
+								printf("\n\nNova Ultima Compra dd mm aaaa: ");
+								scanf("%d %d %d", &estoque.ultima_compra.dia, &estoque.ultima_compra.mes, &estoque.ultima_compra.ano);
+								fseek(fl,pos,0);
+								fwrite(&estoque,sizeof(ESTOQUE),1,fl);		
+								break;
+						}						
+						if(op >= 1 && op <= 4){
+							printf("\n\nRegistro Atualizado!");
+						}
+					}
+					printf("\n\nDeseja atualizar outro material? (s)(n)");
+				} while(toupper(getch()) != 'S');
 			}
 			break;
 	}
@@ -961,6 +1054,57 @@ void excluir(int op){
 			}
 			fclose(fl);
 			break;		
+		case 5:
+			fl = fopen("estoque.bin","rb");
+			if(fl == NULL){
+				printf("\n\nErro no arquivo!");
+			} else {						
+				do
+				{
+					printf("\n\nInforme o código do material à ser excluido: ");
+					scanf("%d", &cod);	
+					
+					pos = busca_posicao(fl, cod, "", 5);
+					if(pos==-1)
+					{						
+						printf("\n\n(Material não cadastrado!)");
+					}
+					else 
+					{
+						fseek(fl,pos,0);
+						fread(&estoque,sizeof(ESTOQUE),1,fl);
+						printf("\n\n__________________");
+						printf("\n\nCód: %d", estoque.cod);
+						printf("\nQuantidade: %d", estoque.estoque);
+						printf("\nDescrição: %s", estoque.descricao);
+						printf("\nUltima Compra: %d/%d/%d", estoque.ultima_compra.dia, estoque.ultima_compra.mes, estoque.ultima_compra.ano);
+						printf("\n__________________");
+						printf("\n\nDeseja excluir? (s/n)");
+						if(toupper(getch()) == 'S'){
+							FILE *temp;
+							temp = fopen("auxiliar.bin","wb");
+							rewind(fl);
+							fread(&estoque,sizeof(ESTOQUE),1,fl);
+							while(!feof(fl)){
+								if(estoque.cod != cod){
+									fwrite(&estoque,sizeof(ESTOQUE),1,fl);						
+								}
+								fread(&serie,sizeof(ESTOQUE),1,fl);
+							}
+							fclose(fl);
+							fclose(temp);
+							remove("estoque.bin");
+							rename("auxiliar.bin","estoque.bin");
+							system("cls");
+							printf("\n\nArquivo excluido com sucesso!\n");
+							system("pause");
+						}						
+					}
+					printf("\n\nDeseja excluir outro Material? (s)(n)");
+				}while(toupper(getche())=='S');						
+			}
+			fclose(fl);
+			break;
 	}
 }
 
